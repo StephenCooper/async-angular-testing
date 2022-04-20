@@ -314,3 +314,95 @@ it('should filter rows by quickFilterText using fakeAsync auto', fakeAsync(() =>
     validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
   }))
 ```
+
+## Using async await
+
+Another way that we can test our application is to use the built in `async` and `await` syntax along with the fixture method `whenStable()`. This can at times be a simpler way to write your test without having to worry about manually flushing async tasks like you have to with `fakeAsync`.
+
+Let's now re-write our test to work with `async` and `await`.
+
+```ts
+  it('should filter rows by quickfilter (async version)', (async () => {
+    // Grid has not been created yet.
+    expect(component.grid).toBeUndefined()
+    // Our first call to detectChanges, causes the grid to be create and passes the component values to the grid via its Inputs meaning the grid's internal model is setup
+    fixture.detectChanges()
+    // Grid has now been created
+    expect(component.grid.api).toBeDefined()
+
+    // At this point in the test we see that the async callback onModelUpdated has not run
+    validateState({ gridRows: 1000, displayedRows: 0, templateRows: 0 })
+
+    // We wait for the fixture to be stable which allows all the asynchronous code to run.
+    await fixture.whenStable()
+    // Callback has now completed and test continues
+    validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 0 })
+    // We run change detection to update the template based off the new component state
+    fixture.detectChanges()
+
+    validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 1000 })
+
+    // Now let's test that updating the filter text input does filter the grid data.
+    // Set the filter to Germany
+    quickFilterDE.nativeElement.value = 'Germany'
+    quickFilterDE.nativeElement.dispatchEvent(new Event('input'));
+
+    // We force change detection to run which applies the update to our <ag-grid-angular [quickFilterText] Input.
+    fixture.detectChanges()
+    validateState({ gridRows: 68, displayedRows: 1000, templateRows: 1000 })
+
+    // Again we wait for the asynchronous code to complete
+    await fixture.whenStable()
+    validateState({ gridRows: 68, displayedRows: 68, templateRows: 1000 })
+    // Run change detection again to update the template.
+    fixture.detectChanges()
+
+    // We have now reached a stable state and tested that passing a [quickFilterText] to our grid component does correctly filter the rows
+    // and update our display correctly with the number of filtered row.
+    validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
+
+  }))
+```
+
+```ts
+  it('should filter rows by quickfilter (async version)', (async () => {
+    
+    fixture.detectChanges()    
+    await fixture.whenStable()    
+    fixture.detectChanges()
+
+    validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 1000 })
+
+    // Now let's test that updating the filter text input does filter the grid data.
+    // Set the filter to Germany
+    quickFilterDE.nativeElement.value = 'Germany'
+    quickFilterDE.nativeElement.dispatchEvent(new Event('input'));
+
+    // We force change detection to run which applies the update to our <ag-grid-angular [quickFilterText] Input.
+    fixture.detectChanges()
+    await fixture.whenStable()
+    fixture.detectChanges()
+
+    validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
+  }))
+```
+
+```ts
+  it('should filter rows by quickfilter (async version)', (async () => {
+    
+    fixture.autoDetectChanges()
+    await fixture.whenStable()
+
+    validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 1000 })
+
+    // Now let's test that updating the filter text input does filter the grid data.
+    // Set the filter to Germany
+    quickFilterDE.nativeElement.value = 'Germany'
+    quickFilterDE.nativeElement.dispatchEvent(new Event('input'));
+
+    // We force change detection to run which applies the update to our <ag-grid-angular [quickFilterText] Input.
+    await fixture.whenStable()
+
+    validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
+  }))
+```

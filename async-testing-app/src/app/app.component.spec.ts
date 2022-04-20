@@ -102,17 +102,13 @@ describe('AppComponent', () => {
     fixture.autoDetectChanges()
     flush();
 
-    // Validate full set of data is displayed
     validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 1000 })
 
     // Update the filter text input
     quickFilterDE.nativeElement.value = 'Germany'
     quickFilterDE.nativeElement.dispatchEvent(new Event('input'));
 
-    // Push filter text to grid, run async tasks, update HTML template
     flush()
-
-    // Validate correct number of rows are shown for our filter text
     validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
 
   }))
@@ -188,6 +184,21 @@ describe('AppComponent', () => {
 
     // We have now reached a stable state and tested that passing a [quickFilterText] to our grid component does correctly filter the rows
     // and update our display correctly with the number of filtered row.
+    validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
+
+  }))
+
+  it('should filter rows by quickfilter (async version) auto detect 2', (async () => {
+
+    fixture.autoDetectChanges()
+    await fixture.whenStable()
+    validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 1000 })
+
+    // Set the filter to Germany
+    quickFilterDE.nativeElement.value = 'Germany'
+    quickFilterDE.nativeElement.dispatchEvent(new Event('input'));
+
+    await fixture.whenStable()
     validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
 
   }))
