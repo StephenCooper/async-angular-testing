@@ -6,7 +6,7 @@ import { AgGridModule } from 'ag-grid-angular';
 import { AppComponent } from './app.component';
 
 
-fdescribe('AppComponent', () => {
+describe('AppComponent', () => {
   let component: AppComponent;
   let fixture: ComponentFixture<AppComponent>;
   let compDebugElement: DebugElement
@@ -32,14 +32,14 @@ fdescribe('AppComponent', () => {
 
   function validateState({ gridRows, displayedRows, templateRows }: { gridRows: number, displayedRows: number, templateRows: number }) {
     expect(component.grid.api).toBeDefined()
-    expect(component.grid.api.getDisplayedRowCount()).withContext('api.getDisplayedRowCount').toEqual(gridRows)
+    // Validate the internal grid model by calling its api method to get the row count
+    expect(component.grid.api.getDisplayedRowCount()).toEqual(gridRows)
+    // Validate the component property displayedRows which we use in the template
     expect(component.displayedRows).withContext('component.displayedRows').toEqual(displayedRows)
-    expect(getTextValue(rowNumberDE)).withContext('<div> {{displayedRows}} </div>').toContain(templateRows)
+    // Validate the rendered html content that the user would see
+    expect(rowNumberDE.nativeElement.innerHTML).withContext('<div> {{displayedRows}} </div>').toContain("Number of rows: " + templateRows)
   }
 
-  /*
-
-  */
   it('should filter rows by quickFilterText using fakeAsync', fakeAsync(() => {
 
     // When the test starts our test component has been created but not initialised yet.
@@ -96,6 +96,28 @@ fdescribe('AppComponent', () => {
 
   }))
 
+  it('should filter rows by quickFilterText using fakeAsync auto', fakeAsync(() => {
+
+    // Setup grid, run async tasks, update HTML template
+    fixture.autoDetectChanges()
+    flush();
+
+    // Validate full set of data is displayed
+    validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 1000 })
+
+    // Update the filter text input
+    quickFilterDE.nativeElement.value = 'Germany'
+    quickFilterDE.nativeElement.dispatchEvent(new Event('input'));
+
+    // Push filter text to grid, run async tasks, update HTML template
+    flush()
+
+    // Validate correct number of rows are shown for our filter text
+    validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
+
+  }))
+
+
 
   it('should filter rows by quickfilter (async version)', (async () => {
 
@@ -137,29 +159,37 @@ fdescribe('AppComponent', () => {
 
   }))
 
-  it('should filter rows by quickFilterText using fakeAsync auto', fakeAsync(() => {
+  it('should filter rows by quickfilter (async version) auto detect', (async () => {
 
-    // Setup grid, run async tasks, update HTML template
+    // When the test starts our test component has been created but not initialised yet.
+    // This means our <ag-grid-angular> component has not been created or had data passed to it yet.
+    expect(component.grid).toBeUndefined()
+    // Our first call to detectChanges, causes the grid to be create and passes the component values to the grid via its Inputs meaning the grid's internal model is setup
     fixture.autoDetectChanges()
-    flush();
 
-    // Validate full set of data is displayed
+    // Grid has now been created
+    expect(component.grid.api).toBeDefined()
+
+    validateState({ gridRows: 1000, displayedRows: 0, templateRows: 0 })
+
+    // We wait for the fixture to be stable which allows all the asynchronous code to run.
+    await fixture.whenStable()
     validateState({ gridRows: 1000, displayedRows: 1000, templateRows: 1000 })
 
-    // Update the filter text input
+    // Now let's test that updating the filter text input does filter the grid data.
+    // Set the filter to Germany
     quickFilterDE.nativeElement.value = 'Germany'
     quickFilterDE.nativeElement.dispatchEvent(new Event('input'));
 
-    // Push filter text to grid, run async tasks, update HTML template
-    flush()
+    validateState({ gridRows: 68, displayedRows: 1000, templateRows: 1000 })
 
-    // Validate correct number of rows are shown for our filter text
+    // Again we wait for the asynchronous code to complete
+    await fixture.whenStable()
+
+    // We have now reached a stable state and tested that passing a [quickFilterText] to our grid component does correctly filter the rows
+    // and update our display correctly with the number of filtered row.
     validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
 
   }))
 
-
-  function getTextValue(element: DebugElement) {
-    return element.nativeElement.innerHTML.trim()
-  }
 });
