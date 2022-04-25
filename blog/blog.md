@@ -1,12 +1,12 @@
-# Angular fakeAsync
+If you are testing an Angular application, then at some point, you will be required to test asynchronous behaviour. In this article, we will demonstrate how to write an asynchronous test with both `fakeAsync` and `async`/`await`. We will explain each step in detail to give you the understanding and confidence to write your own asynchronous tests.
 
-If you are testing an Angular application, then at some point, you will be required to test asynchronous behaviour. In this article we will demonstrate how to write an asynchronous test with both `fakeAsync` and `async`/`await`. We will explain each step in detail to give you the understanding and confidence to write your own asynchronous tests.
+Full application code along with tests is available at [StephenCooper/async-angular-testing](https://github.com/StephenCooper/async-angular-testing/tree/main/async-testing-app)
 
 ## Application for our Test
 
 We will be testing an application that uses [AG Grid](https://ag-grid.com/). Our application displays a table of Olympic medal winners and also provides users with a text box to filter the medal winners by any field. You can try the application out for yourself [here](https://plnkr.co/edit/ef2ozOyGVZlvT2wq?open=app%2Fapp.component.ts).
 
-![Filter data by text input](./filter-by-germany.gif)
+![Filter data by text input](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/0ven45ih1e21zpnzt21v.gif)
 
 We are going to test that we can filter our data to a specific country of interest. Our test will validate that:
 
@@ -14,7 +14,7 @@ We are going to test that we can filter our data to a specific country of intere
 1. Upon entering the text "Germany" the grid should filter the rows to only show German athletes
 3. Our application row count should update to 68 (the number of German athletes).
 
-The reason for choosing this application, is that it contains asynchronous code making it virtually impossible to test synchronously. 
+The reason for choosing this application is that it contains asynchronous code making it virtually impossible to test synchronously. 
 
 ## Application Code
 
@@ -86,10 +86,18 @@ The `.withContext()` is a helpful Jasmine method to give us clearer error messag
  The first part of the test is to configure the test module. It requires AG Grid's `AgGridModule` and also Angular's `FormModule` to provide support for `ngModel`.
  
  ```ts
+import { DebugElement } from '@angular/core';
+import { ComponentFixture, fakeAsync, flush, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
+import { By } from '@angular/platform-browser';
+
+import { AgGridModule } from 'ag-grid-angular';
+import { AppComponent } from './app.component';
+
 beforeEach(() => {
   TestBed.configureTestingModule({
-    declarations: [AppComponent],
-        imports: [AgGridModule, FormsModule],
+      declarations: [AppComponent],
+      imports: [AgGridModule, FormsModule],
     });
     // Create the test component fixture
     fixture = TestBed.createComponent(AppComponent);
@@ -104,6 +112,7 @@ beforeEach(() => {
 An important thing to note here is what is missing from `beforeEach`. We have purposefully not included `fixture.detectChanges()` as part of our setup logic. By doing this we ensure that all our tests are as isolated and it enables us to make assertions on our component before it is initialised. Finally, and most importantly, when working with `fakeAsync` we do not want our component to be created outside of our test's `fakeAsync` context. If we do this, we can end up with all sorts of test inconsistencies and bugs.
 
 > Note that we do not run fixture.detectChanges() inside the beforeEach method! This can lead to numerous issues when testing asynchronous code!
+
 ## Broken Synchronous Test
 
 To prove that we need to handle this test asynchronously, let's first try to write the test synchronously.
@@ -153,7 +162,7 @@ As asynchronous code is very common, Angular provides us with the [fakeAsync](ht
 
 The high-level concept with `fakeAsync` is that when the test comes to execute an asynchronous task, it is added into a time-based queue instead of being executed. As a developer, we can then choose when the tasks are run. If we want to run all the currently queued async tasks we call `flush()`. As the name suggests this flushes all the queued tasks executing them as they are removed from the queue. 
 
-If we have code that uses a timeout, for example `setTimeout(() => {}, 500)`, then this will be added to the fake async queue with a time delay of 500. We can use the `tick` function to advance time by a set amount. This will walk through the queue and execute tasks that are scheduled before this time delay. Tick gives us more control over how many tasks are removed from the queue as compared to flush.
+If we have code that uses a timeout, for example, `setTimeout(() => {}, 500)`, then this will be added to the fake async queue with a time delay of 500. We can use the `tick` function to advance time by a set amount. This will walk through the queue and execute tasks that are scheduled before this time delay. Tick gives us more control over how many tasks are removed from the queue as compared to flush.
 
 It is worth noting that there is also a `flushMicrotasks()` function. For an example of when you might use `flushMicrotasks` instead of `flush` take a look at this article [Angular Testing Flush vs FlushMiscrotasks](https://www.damirscorner.com/blog/posts/20210702-AngularTestingFlushVsFlushMicrotasks.html).
 
@@ -163,7 +172,7 @@ You will see the following line of code `fixture.detectChanges()` in a lot of An
 
 ## Quick Filter Test with FakeAsync
 
-We will now walk through the full `fakeAsync` test to validate our application correctly filters data and updates the number of displayed rows. 
+We will now walk through the full `fakeAsync` test to validate that our application correctly filters data and updates the number of displayed rows. 
 
 ### Test setup
 
@@ -258,7 +267,7 @@ validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
 
 ## Full Test Code
 
-Here is a more concise version of the test without all the intermediary validation steps. Hopefully it is now clear why we have this repeating pattern of `detectChanges` -> `flush` -> `detectChanges`. In both cases you can think of it as: update component inputs, run async tasks of, and then update the template with the resulting values. 
+Here is a more concise version of the test without all the intermediary validation steps. Hopefully it is now clear why we have this repeating pattern of `detectChanges` -> `flush` -> `detectChanges`. In both cases, you can think of it as updating component inputs, running async tasks, and then updating the template with the resulting values. 
 
 ```ts
 it('should filter rows by quickFilterText using fakeAsync', fakeAsync(() => {
@@ -315,13 +324,13 @@ it('should filter rows by quickFilterText using fakeAsync auto', fakeAsync(() =>
   }))
 ```
 
-As you can see, writing the test with auto-detect, hides a lot of complexity and so may be a good starting point for your asynchronous tests. Just be aware you will lose precise control of when change detection is run.
+As you can see, writing the test with auto-detect hides a lot of complexity and so maybe a good starting point for your asynchronous tests. Just be aware you will lose precise control of when change detection is run.
 
 ## Using async await
 
 Another way that we can test our application is to use the built-in [`async` and `await` syntax](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function) along with the fixture method `fixture.whenStable()`. This can at times be a simpler way to write async tests as you do not have to worry about manually running async tasks. 
 
-Its worth noting that there are cases when it is impossible to write a test with `fakeAsync`. If any of the executed code has a recursive setTimeout being used as a polling timeout, then the fakeAsync task queue can never empty during a flush. Each time a task is removed and executed it add a new one to the queue indefinitely. This is why you may run into the following error. 
+It is worth noting that there are cases when it is impossible to write a test with `fakeAsync`. If any of the executed code has a recursive setTimeout being used as a polling timeout, then the fakeAsync task queue can never empty during a flush. Each time a task is removed and executed it adds a new one to the queue indefinitely. This is why you may run into the following error. 
 
 ```py
 Error: flush failed after reaching the limit of 20 tasks. Does your code use a polling timeout?
@@ -397,6 +406,10 @@ Here is a concise version using `autoDetectChanges` which is our shortest workin
     validateState({ gridRows: 68, displayedRows: 68, templateRows: 68 })
   }))
 ```
+
+## Complete Test Application Code
+
+You can find the full application, complete with tests in the Github repo: [StephenCooper/async-angular-testing](https://github.com/StephenCooper/async-angular-testing/tree/main/async-testing-app)
 
 ## Conclusion
 
