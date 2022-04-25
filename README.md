@@ -2,6 +2,8 @@
 
 This repo contains a sample application that uses [AG Grid](ag-grid.com) to display a list of Olympic medal winners. This data can be filtered using the [Quick Filter Text](https://ag-grid.com/angular-data-grid/filter-quick/) feature as provided with the grid.  
 
+It complements the dev.to article [Understanding async tests in Angular](https://dev.to/angular/understanding-async-tests-in-angular-f8n)
+
 ![Example Demo](./blog/filter-by-germany.gif)
 
 The application tests that we can filter our data to a specific country of interest. Our test will validate that:
