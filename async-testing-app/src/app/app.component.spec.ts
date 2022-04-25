@@ -33,7 +33,7 @@ describe('AppComponent', () => {
   function validateState({ gridRows, displayedRows, templateRows }: { gridRows: number, displayedRows: number, templateRows: number }) {
     expect(component.grid.api).toBeDefined()
     // Validate the internal grid model by calling its api method to get the row count
-    expect(component.grid.api.getDisplayedRowCount()).toEqual(gridRows)
+    expect(component.grid.api.getDisplayedRowCount()).withContext('api.getDisplayedRowCount').toEqual(gridRows)
     // Validate the component property displayedRows which we use in the template
     expect(component.displayedRows).withContext('component.displayedRows').toEqual(displayedRows)
     // Validate the rendered html content that the user would see
